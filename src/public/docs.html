@@ -1,0 +1,50 @@
+<!-- public/docs.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Thmanyah CMS API Docs</title>
+
+  <!-- Web Components polyfill -->
+  <script src="https://unpkg.com/@webcomponents/webcomponentsjs@2.6.0/webcomponents-loader.js"></script>
+
+  <!-- Stoplight Elements -->
+  <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css">
+
+  <!-- =================================================================== -->
+  <!-- ADD THIS STYLE BLOCK TO FIX THE LAYOUT -->
+  <!-- =================================================================== -->
+  <style>
+    html, body {
+      /* Remove default browser margins */
+      margin: 0;
+      padding: 0;
+      /* Make the body expand to the full height of the browser window */
+      height: 100%;
+      width: 100%;
+      /* Prevent the body itself from scrolling, letting Elements handle it */
+      overflow: hidden;
+    }
+
+    elements-api {
+      /* Make the component a block-level element */
+      display: block;
+      /* Set the height to 100% of the viewport height */
+      height: 100vh;
+    }
+  </style>
+  <!-- =================================================================== -->
+
+</head>
+<body>
+
+<elements-api
+  apiDescriptionUrl="/openapi.json"
+  router="hash"
+  layout="sidebar"
+/>
+
+</body>
+</html>
