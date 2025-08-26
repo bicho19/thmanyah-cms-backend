@@ -62,6 +62,8 @@ export default async ({ container, configModule }: LoaderOptions): Promise<void>
 	const resolvedPath = path.join(getCurrentDirName(import.meta.url), jobsPath);
 	const jobFiles = glob.sync(resolvedPath);
 
+	logger.debug(`Found ${jobFiles.length} job files in ${jobsPath}`);
+
 	for (const file of jobFiles) {
 		const jobModule = await import(path.resolve(file));
 		const JobClass = jobModule.default;

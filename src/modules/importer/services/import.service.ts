@@ -53,64 +53,64 @@ export default class ImportService {
 		return importer;
 	}
 
-	public async importProgram(url: string): Promise<Program> {
-		const importer = this.findImporter(url);
-
-		this.logger.info(`Fetching and mapping data from source: ${importer.providerName}`);
-		const data = await importer.fetchAndMap(url);
-		this.logger.debug(`Successfully mapped ${data.episodes.length} episodes for program: ${data.title}`);
-
-		const existingProgram = await this.programRepository.findOne({
-			sourceProvider: data.sourceProvider,
-			sourceId: data.sourceId,
-		});
-
-		if (existingProgram) {
-			this.logger.warn(`Program "${data.title}" already exists. Update logic not yet implemented.`);
-			// In the future, you could call an `updateExistingProgram` method here.
-			// For now, we'll just return the existing program.
-			return existingProgram;
-		}
-
-		this.logger.info(`Creating new program in database: "${data.title}"`);
-		const program = await this.entityManager.transactional(async (em) => {
-			const programRepo = em.getRepository(Program);
-
-			const newProgram = programRepo.create({
-				title: data.title,
-				description: data.description,
-				sourceProvider: data.sourceProvider,
-				sourceId: data.sourceId,
-				thumbnailUrl: data.thumbnailUrl,
-				status: 'draft',
-			});
-
-			// Bulk create episodes for better performance
-			for (const epData of data.episodes) {
-				const episode = em.create(Episode, {
-					program: newProgram,
-					title: epData.title,
-					description: epData.description,
-					publishDate: epData.publishDate,
-					durationSeconds: epData.durationSeconds,
-					thumbnailUrl: epData.thumbnailUrl,
-					status: 'draft',
-					primaryMediaType: epData.media[0]?.type,
-				});
-
-				for (const mediaData of epData.media) {
-					em.create(Media, { episode, ...mediaData });
-				}
-			}
-
-			return newProgram;
-		});
-
-		this.logger.info(`Successfully saved program with ID: ${program.id}`);
-
-		// Dispatch an event to notify other parts of the system
-		this.eventBus.dispatch(new ProgramImportedEvent({ programId: program.id }));
-
-		return program;
-	}
+	// public async importProgram(url: string): Promise<Program> {
+	// 	const importer = this.findImporter(url);
+	//
+	// 	this.logger.info(`Fetching and mapping data from source: ${importer.providerName}`);
+	// 	const data = await importer.fetchAndMap(url);
+	// 	this.logger.debug(`Successfully mapped ${data.episodes.length} episodes for program: ${data.title}`);
+	//
+	// 	const existingProgram = await this.programRepository.findOne({
+	// 		sourceProvider: data.sourceProvider,
+	// 		sourceId: data.sourceId,
+	// 	});
+	//
+	// 	if (existingProgram) {
+	// 		this.logger.warn(`Program "${data.title}" already exists. Update logic not yet implemented.`);
+	// 		// In the future, you could call an `updateExistingProgram` method here.
+	// 		// For now, we'll just return the existing program.
+	// 		return existingProgram;
+	// 	}
+	//
+	// 	this.logger.info(`Creating new program in database: "${data.title}"`);
+	// 	const program = await this.entityManager.transactional(async (em) => {
+	// 		const programRepo = em.getRepository(Program);
+	//
+	// 		const newProgram = programRepo.create({
+	// 			title: data.title,
+	// 			description: data.description,
+	// 			sourceProvider: data.sourceProvider,
+	// 			sourceId: data.sourceId,
+	// 			thumbnailUrl: data.thumbnailUrl,
+	// 			status: 'draft',
+	// 		});
+	//
+	// 		// Bulk create episodes for better performance
+	// 		for (const epData of data.episodes) {
+	// 			const episode = em.create(Episode, {
+	// 				program: newProgram,
+	// 				title: epData.title,
+	// 				description: epData.description,
+	// 				publishDate: epData.publishDate,
+	// 				durationSeconds: epData.durationSeconds,
+	// 				thumbnailUrl: epData.thumbnailUrl,
+	// 				status: 'draft',
+	// 				primaryMediaType: epData.media[0]?.type,
+	// 			});
+	//
+	// 			for (const mediaData of epData.media) {
+	// 				em.create(Media, { episode, ...mediaData });
+	// 			}
+	// 		}
+	//
+	// 		return newProgram;
+	// 	});
+	//
+	// 	this.logger.info(`Successfully saved program with ID: ${program.id}`);
+	//
+	// 	// Dispatch an event to notify other parts of the system
+	// 	this.eventBus.dispatch(new ProgramImportedEvent({ programId: program.id }));
+	//
+	// 	return program;
+	// }
 }

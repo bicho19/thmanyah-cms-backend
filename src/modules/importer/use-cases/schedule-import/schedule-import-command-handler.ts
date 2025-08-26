@@ -1,21 +1,28 @@
-import { ContainerInfraKeys } from '@/infra/constants';
+import { ContainerInfraKeys, ContainerServicesKeys } from '@/infra/constants';
 import type { IQueueModule } from '@/infra/job/types';
 import type { CommandHandler } from '@/lib/cqrs/command-handler';
 import AppError from '@/lib/exceptions/errors';
+import type ProgramService from '@/modules/content/services/program.service';
 import type {
 	ScheduleImportCommand,
 	ScheduleImportResponse,
 } from '@/modules/importer/use-cases/schedule-import/schedule-import.types';
+import type { AppLogger } from '@/types/common';
 
 type ScheduleImportHandlerProps = {
+	[ContainerInfraKeys.LOGGER]: AppLogger;
 	[ContainerInfraKeys.QUEUE_MODULE]: IQueueModule;
+	[ContainerServicesKeys.PROGRAM]: ProgramService;
 };
 
-class ScheduleImportHandler implements CommandHandler<ScheduleImportCommand, ScheduleImportResponse> {
+class ScheduleImportCommandHandler implements CommandHandler<ScheduleImportCommand, ScheduleImportResponse> {
+	private readonly logger: AppLogger;
 	private readonly queueModule: IQueueModule;
+	private readonly programService: ProgramService;
 
-	constructor({ _queue_module }: ScheduleImportHandlerProps) {
-		this.queueModule = _queue_module;
+	constructor({ logger, _queue_module, programService }: ScheduleImportHandlerProps) {
+		(this.logger = logger), (this.queueModule = _queue_module);
+		this.programService = programService;
 	}
 
 	/**
@@ -25,36 +32,31 @@ class ScheduleImportHandler implements CommandHandler<ScheduleImportCommand, Sch
 	 * @returns A promise that resolves with the response containing the job ID.
 	 */
 	async execute(payload: ScheduleImportCommand): Promise<ScheduleImportResponse> {
-		const { url } = payload;
+		const { url, programId } = payload;
 
-		// 1. --- Input Validation ---
-		// A simple validation to ensure the URL is present and looks like a URL.
-		// More complex validation (e.g., using a library like Zod) could be added here.
-		if (!url || !url.startsWith('http')) {
-			throw new AppError(AppError.Types.VALIDATION_ERROR, 'A valid URL must be provided for import.');
+		const program = await this.programService.retrieve(programId);
+
+		if (!program) {
+			throw new AppError(AppError.Types.NOT_FOUND, `Program with id ${programId} not found`);
 		}
 
-		// 2. --- Dispatch Job to Queue ---
-		// We use the queue module to dispatch a new job.
-		// The job name 'ImportProgramJob' must match the name configured in the job handler file.
-		// The payload for the job is the URL itself.
-		const job = await this.queueModule.dispatch({
-			name: 'ImportProgramJob',
-			payload: { url },
-			// You can pass job-specific options here if your queue module supports it
-			// options: {
-			// 	attempts: 3,
-			// 	delay: 5000 // Delay the first attempt by 5 seconds
-			// }
-		});
+		const correlationId = (this.logger.bindings()?.correlationId as string) ?? '';
 
-		// 3. --- Return Response ---
+		await this.queueModule.dispatch({
+			name: 'import-youtube-playlist-job',
+			data: {
+				url: url,
+				programId: programId,
+			},
+			context: {
+				correlationId: correlationId,
+			},
+		});
 		// The response confirms that the job has been successfully queued.
 		return {
-			jobId: job.id,
-			message: 'Program import has been successfully scheduled. It will be processed in the background.',
+			message: 'The job has been placed',
 		};
 	}
 }
 
-export default ScheduleImportHandler;
+export default ScheduleImportCommandHandler;

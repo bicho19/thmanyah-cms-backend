@@ -15,18 +15,18 @@ export class YouTubeImporter implements IImporter {
 	}
 
 	async fetchAndMapEpisodes(playlistId: string): Promise<MappedEpisodeData[]> {
-		// 1. Fetch all playlist items with pagination
+		//  Fetch all playlist items with pagination
 		const playlistItems = await this.fetchPlaylistItems(playlistId);
 
-		// 2. Collect all video IDs
+		// Collect all video IDs
 		const videoIds = playlistItems
 			.map((item) => item.contentDetails?.videoId)
 			.filter((id): id is string => Boolean(id));
 
-		// 3. Fetch durations in batches of 50 (API limit)
+		// Fetch durations in batches of 50 (API limit)
 		const durationMap = await this.fetchVideoDurations(videoIds);
 
-		// 4. Map to standardized format
+		// Map to standardized format
 		const mappedEpisodes: MappedEpisodeData[] = playlistItems.map((item) => {
 			const videoId = item.contentDetails?.videoId ?? '';
 			const snippet = item.snippet ?? {};
